@@ -1,0 +1,288 @@
+;********************************************************************************************************
+;                                              uC/OS-II
+;                                        The Real-Time Kernel
+;
+;                    Copyright 1992-2020 Silicon Laboratories Inc. www.silabs.com
+;
+;                                 SPDX-License-Identifier: APACHE-2.0
+;
+;               This software is subject to an open source license and is distributed by
+;                Silicon Laboratories Inc. pursuant to the terms of the Apache License,
+;                    Version 2.0 available at www.apache.org/licenses/LICENSE-2.0.
+;
+;********************************************************************************************************
+
+;********************************************************************************************************
+;
+;                                                H8-300
+;
+; Filename : os_cpu_a.s37
+; Version  : V2.93.00
+;********************************************************************************************************
+
+;********************************************************************************************************
+;                                         Cross references
+;********************************************************************************************************
+;
+          PUBLIC   OSStartHighRdy      ; Public functions
+          PUBLIC   OSCtxSw
+          PUBLIC   OSIntCtxSw
+          PUBLIC   OSTickISR
+
+          EXTERN   OSIntEnter          ; External functions
+          EXTERN   OSIntExit
+          EXTERN   OSTimeTick
+          EXTERN   OSTaskSwHook
+
+          EXTERN   OSTCBCur            ; External variables (uC/OS-II)
+          EXTERN   OSTCBHighRdy
+          EXTERN   OSPrioCur
+          EXTERN   OSPrioHighRdy
+          EXTERN   OSIntNesting
+          EXTERN   OSRunning
+
+          EXTERN Tmr_ISRClr            ; Function to clear the timer interrupt
+
+
+;*********************************************************************************************************
+;                                         START MULTITASKING
+;
+; Description : This function is called by OSStart() to start the highest priority task that was created
+;               by your application before calling OSStart().
+;
+; Arguments   : none
+;
+; Note(s)     : 1) The stack frame is assumed to look as follows:
+;
+;                  OSTCBHighRdy->OSTCBStkPtr +  0  ---->  R6          LOW MEMORY
+;                                            +  2         R5
+;                                            +  4         R4
+;                                            +  6         R3
+;                                            +  8         R2
+;                                            + 10         R1
+;                                            + 12         R0
+;                                            + 14         CCR         (Initial value of 0x0000)
+;                                            + 16         task        (address  of 'task')
+;                                            + 18         task        (address  of 'task')
+;                                            + 20         p_arg       (contents of 'p_arg')
+;                                                                     HIGH MEMORY
+;               2) OSStartHighRdy() MUST:
+;                      a) Call OSTaskSwHook() then,
+;                      b) Set OSRunning to TRUE,
+;                      c) Switch to the highest priority task.
+;*********************************************************************************************************
+          RSEG     CODE(1)
+
+OSStartHighRdy:
+          JSR      @OSTaskSwHook         ; Execute task switch hook
+;
+          MOV.B    #1,  R6L              ; Set OSRunning to TRUE
+          MOV.B    R6L, @OSRunning
+;
+          MOV.W    @OSTCBHighRdy, R0     ; SP = OSTCBHighRdy->OSTCBStkPtr
+          MOV.W    R0,  @OSTCBCur
+          MOV.W    @R0, SP
+;
+          POP      R6
+          POP      R5
+          POP      R4
+          POP      R3
+          POP      R2
+          POP      R1
+          POP      R0
+;
+          RTE
+
+
+;*********************************************************************************************************
+;                                       TASK LEVEL CONTEXT SWITCH
+;
+; Description : This function is called when a task makes a higher priority task ready-to-run.
+;
+; Arguments   : none
+;
+; Note(s)     : 1) Upon entry,
+;                  OSTCBCur     points to the OS_TCB of the task to suspend
+;                  OSTCBHighRdy points to the OS_TCB of the task to resume
+;
+;               2) The stack frame of the task to suspend looks as follows.  This was caused by the
+;                  execution of a TRAPA #0 instruction (the registers for the task to suspend need to be
+;                  saved):
+;
+;                                                                                          LOW MEMORY
+;                                         SP +  0  ---->  PC of task  (Lower 16-bits only)
+;                                                                                          HIGH MEMORY
+;
+;               3) The stack frame of the task to resume looks as follows:
+;
+;                                                                                          LOW MEMORY
+;                  OSTCBHighRdy->OSTCBStkPtr +  0  ---->  R6
+;                                            +  2         R5
+;                                            +  4         R4
+;                                            +  6         R3
+;                                            +  8         R2
+;                                            + 10         R1
+;                                            + 12         R0
+;                                            + 14         CCR
+;                                            + 16         PC of task
+;                                                                                          HIGH MEMORY
+;
+;               4) OSCtxSw() is invoked by a JSR instead of a TRAP.  Because of this, the CCR is NOT
+;                  placed onto the stack immediately following the return address.  The CCR is placed
+;                  on the stack 'manually' by first pushing R0 (to reserve the memory for the CCR) and
+;                  then, moving the CCR to the reserved memory location 'after' pushing all the other
+;                  registers.
+;*********************************************************************************************************
+
+OSCtxSw:
+          PUSH     R0                    ; Reserve space for the CCR (see below)
+
+          PUSH     R0
+          PUSH     R1
+          PUSH     R2
+          PUSH     R3
+          PUSH     R4
+          PUSH     R5
+          PUSH     R6
+;
+          STC      CCR, R0L              ; Save CCR onto stack
+          MOV.B    R0L, R0H
+          MOV.W    R0, @(14,SP)          ; into the reserved location
+
+          MOV.W    @OSTCBCur, R6        ; Save current task's SP into its TCB
+          MOV.W    ER7, @R6
+;
+          JSR      @OSTaskSwHook         ; Execute task switch hook
+;
+          MOV.B    @OSPrioHighRdy, R1L   ; OSPrioCur = OSPrioHighRdy
+          MOV.B    R1L, @OSPrioCur
+;
+          MOV.W    @OSTCBHighRdy, R6    ; Get new task's SP from its TCB
+          MOV.W    R6,  @OSTCBCur       ; OSTCBCur = OSTCBHighRdy
+          MOV.W    @R6, ER7
+;
+          POP      R6
+          POP      R5
+          POP      R4
+          POP      R3
+          POP      R2
+          POP      R1
+          POP      R0
+;
+          RTE                            ; Return to task
+
+
+;*********************************************************************************************************
+;                               PERFORM A CONTEXT SWITCH (From an ISR)
+;
+; Description : This function is called when an ISR makes a higher priority task ready-to-run.
+;
+; Arguments   : none
+;
+; Note(s)     : 1) Upon entry,
+;                  OSTCBCur     points to the OS_TCB of the task to suspend
+;                  OSTCBHighRdy points to the OS_TCB of the task to resume
+;
+;               2) The stack frame of the task to suspend looks as follows.
+;
+;                                                                                             LOW MEMORY
+;                                        SP  +  0  ---->  R6
+;                                            +  2         R5
+;                                            +  4         R4
+;                                            +  8         R3
+;                                            + 10         R2
+;                                            + 12         R1
+;                                            + 14         R0
+;                                            + 16         CCR
+;                                            + 18         PC of task
+;                                                                                          HIGH MEMORY
+;
+;               3) The stack frame of the task to resume looks as follows:
+;
+;                                                                                          LOW MEMORY
+;                  OSTCBHighRdy->OSTCBStkPtr +  0  ---->  R6
+;                                            +  2         R5
+;                                            +  4         R4
+;                                            +  8         R3
+;                                            + 10         R2
+;                                            + 12         R1
+;                                            + 14         R0
+;                                            + 16         CCR
+;                                            + 18         PC of task
+;                                                                                          HIGH MEMORY
+;*********************************************************************************************************
+
+OSIntCtxSw:
+          JSR      @OSTaskSwHook         ; Execute task switch hook
+;
+          MOV.B    @OSPrioHighRdy, R1L   ; OSPrioCur = OSPrioHighRdy
+          MOV.B    R1L, @OSPrioCur
+;
+          MOV.W    @OSTCBHighRdy, R6    ; Get new task's SP from its TCB
+          MOV.W    R6, @OSTCBCur        ; OSTCBCur = OSTCBHighRdy
+;
+          MOV.W    @R6, SP
+;
+          POP      R6
+          POP      R5
+          POP      R4
+          POP      R3
+          POP      R2
+          POP      R1
+          POP      R0
+;
+          RTE
+
+
+;*********************************************************************************************************
+;*                                              TICK ISR
+;*
+;* OSTickISR:
+;*    Push ALL registers onto current task's stack
+;*    OSIntNesting++;
+;*    if (OSIntNesting == 1) {
+;*        OSTCBCur->OSTCBStkPtr = SP;
+;*    }
+;*    /* Code to clear interrupt source */
+;*    OSTimeTick();
+;*    OSIntExit();
+;*    Pop ALL registers from current stack;
+;*    Return from interrupt;
+;*********************************************************************************************************
+
+OSTickISR:
+          PUSH     R0
+          PUSH     R1
+          PUSH     R2
+          PUSH     R3
+          PUSH     R4
+          PUSH     R5
+          PUSH     R6
+
+          MOV.B    @OSIntNesting, R6L    ; tell uC/OS-II we're in an ISR
+          INC.B    R6L
+          MOV.B    R6L, @OSIntNesting
+
+          CMP.B    #1,R6L                ; if (OSNesting == 1)
+          BNE      OSTickISR1
+          MOV.W    @OSTCBCur, R6        ;     Save current task's SP into its TCB
+          MOV.W    SP, @R6
+OSTickISR1:
+
+;         ADD YOUR code HERE to clear the interrupt source!
+
+          JSR      @OSTimeTick           ; Notify uC/OS-II about Tick
+
+          JSR      @OSIntExit            ; Notify uC/OS-II about end of ISR
+
+          POP      R6
+          POP      R5
+          POP      R4
+          POP      R3
+          POP      R2
+          POP      R1
+          POP      R0
+
+          RTE
+
+          END

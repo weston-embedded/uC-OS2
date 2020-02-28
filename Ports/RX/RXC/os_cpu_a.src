@@ -1,0 +1,281 @@
+;********************************************************************************************************
+;                                              uC/OS-II
+;                                        The Real-Time Kernel
+;
+;                    Copyright 1992-2020 Silicon Laboratories Inc. www.silabs.com
+;
+;                                 SPDX-License-Identifier: APACHE-2.0
+;
+;               This software is subject to an open source license and is distributed by
+;                Silicon Laboratories Inc. pursuant to the terms of the Apache License,
+;                    Version 2.0 available at www.apache.org/licenses/LICENSE-2.0.
+;
+;********************************************************************************************************
+
+;********************************************************************************************************
+;
+;                                      Renesas RX Specific Code
+;
+; Filename  : os_cpu_a.src
+; Version   : V2.93.00
+;********************************************************************************************************
+; For       : Renesas RXC compiler
+; Toolchain : HEW      with RXC
+;             E2STUDIO with RXC
+;********************************************************************************************************
+
+
+
+;********************************************************************************************************
+;                                           PUBLIC FUNCTIONS
+;********************************************************************************************************
+
+    .GLB   _OSRunning                    ; External function references
+    .GLB   _OSTCBCur
+    .GLB   _OSTCBHighRdy
+    .GLB   _OSPrioCur                    ; Declared as INT8U                  ,  8-bit long
+    .GLB   _OSPrioHighRdy                ; Declared as INT8U                  ,  8-bit long
+    .GLB   _OSTaskSwHook
+    .GLB   _OS_KA_IPL_BoundaryGet
+
+
+;********************************************************************************************************
+;                                      CODE GENERATION DIRECTIVES
+;********************************************************************************************************
+
+
+
+;*********************************************************************************************************
+;                                         START MULTITASKING
+;
+; Description : This function is called by OSStart() to start the highest priority task that was created
+;               by your application before calling OSStart().
+;
+; Arguments   : none
+;
+; Note(s)     : 1) The stack frame for the RX100 and RX200 families is assumed to look as follows:
+;
+;                                                                    LOW MEMORY
+;                  OSTCBHighRdy->OSTCBStkPtr +  0  ---->  MACHI
+;                                            +  4         MACMI
+;                                            +  8         R1  (i.e. p_arg)     (32-bit contents of 'p_arg')
+;                                            + 12         R2
+;                                            + 16         R3
+;                                            + 20         R4
+;                                            + 24         R5
+;                                            + 28         R6
+;                                            + 32         R7
+;                                            + 36         R8
+;                                            + 40         R9
+;                                            + 44         R10
+;                                            + 48         R11
+;                                            + 52         R12
+;                                            + 56         R12
+;                                            + 60         R14
+;                                            + 64         R15
+;                                            + 68         task                 (32-bit address of 'task')
+;                                            + 72         PSW                  (Initial value of 0x0000)
+;                                                                    HIGH MEMORY
+;
+;               2) The stack frame for the RX600 family is assumed to look as follows:
+;
+;                                                                    LOW MEMORY
+;                  OSTCBHighRdy->OSTCBStkPtr +  0  ---->  MACHI
+;                                            +  4         MACMI
+;                                            +  8         FPSW
+;                                            + 12         R1  (i.e. p_arg)     (32-bit contents of 'p_arg')
+;                                            + 16         R2
+;                                            + 20         R3
+;                                            + 24         R4
+;                                            + 28         R5
+;                                            + 32         R6
+;                                            + 36         R7
+;                                            + 40         R8
+;                                            + 44         R9
+;                                            + 48         R10
+;                                            + 52         R11
+;                                            + 56         R12
+;                                            + 60         R12
+;                                            + 64         R14
+;                                            + 68         R15
+;                                            + 72         task                 (32-bit address of 'task')
+;                                            + 76         PSW                  (Initial value of 0x0000)
+;
+;                                                                    HIGH MEMORY
+;
+;               3) OSStartHighRdy() MUST:
+;                      a) Call OSTaskSwHook() then,
+;                      b) Switch to the highest priority task.
+;*********************************************************************************************************
+
+    .SECTION    P, CODE
+    .GLB        _OSStartHighRdy
+
+_OSStartHighRdy:
+    MOV.L   #_OSTaskSwHook, R5         ; Execute task switch hook
+    JSR     R5
+
+    MOV.L   #_OSRunning, R5            ; Set OSRunning to TRUE
+    MOV.B   #1, [R5]
+
+    SETPSW  U
+
+    MOV.L   #_OSTCBHighRdy, R5         ; SP = OSTCBHighRdy->OSTCBStkPtr
+    MOV.L   [R5], R2
+    MOV.L   [R2], SP
+
+                                       ; RESTORE CONTEXT OF NEW TASK
+    POPM    R1-R2                      ; Pop Accumulator registers
+    SHLL    #16, R2                    ; Correct for mid read/low write
+    MVTACLO R2                         ; Write Accumulator
+    MVTACHI R1
+
+.if __RX600
+    POPC    FPSW                       ; Restore FP status word (NOT for RX100 and RX200 families)
+.endif
+
+    POPM    R1-R15                     ; Restore registers
+    RTE                                ; Restore PSW and PC
+
+
+
+;*********************************************************************************************************
+;                                    PENDED CONTEXT SWITCH ISR
+;
+; Description : This ISR Performs all context switching within the OS.
+;
+; Arguments   : none
+;
+; Note(s)     : 1) Upon entry...
+;                  OSTCBCur       Points to the OS_TCB of the task to suspend
+;                  OSTCBHighRdy   Contains the pointer from the last scheduling
+;
+;
+;               2) The interrupt stack frame looks as follows.  This was caused by the
+;                  execution of SWINT event (the registers for the task to suspend need to be
+;                  saved):
+;
+;                                                                         LOW MEMORY
+;                                      ISP +  0  ---->  32-bit PC of task
+;                                          +  4         32-bit PSW
+;                                          +  8
+;                                                                         HIGH MEMORY
+;
+;
+;               3) The stack frame of the task to resume (for RX100 and RX200 families) looks as follows:
+;
+;                                                                         LOW MEMORY
+;                  OSTCBHighRdy->StkPtr +  0  ---->  MACHI
+;                                       +  4         MACLO
+;                                       +  8         R1 (p_arg)
+;                                       + 12         R2
+;                                       + 16         R3
+;                                       + 20         R4
+;                                       + 24         R5
+;                                       + 28         R6
+;                                       + 32         R7
+;                                       + 36         R8
+;                                       + 40         R9
+;                                       + 44         R10
+;                                       + 48         R11
+;                                       + 52         R12
+;                                       + 56         R12
+;                                       + 60         R14
+;                                       + 64         R15
+;                                       + 68         task        (32-bit address of 'task')
+;                                       + 72         PSW
+;                                                                         HIGH MEMORY
+;
+;
+;               4) The stack frame of the task to resume (for the RX600 family) looks as follows:
+;
+;                                                                         LOW MEMORY
+;                  OSTCBHighRdy->StkPtr +  0  ---->  MACHI
+;                                       +  4         MACLO
+;                                       +  8         FPSW
+;                                       + 12         R1 (p_arg)
+;                                       + 16         R2
+;                                       + 20         R3
+;                                       + 24         R4
+;                                       + 28         R5
+;                                       + 32         R6
+;                                       + 36         R7
+;                                       + 40         R8
+;                                       + 44         R9
+;                                       + 48         R10
+;                                       + 52         R11
+;                                       + 56         R12
+;                                       + 60         R12
+;                                       + 64         R14
+;                                       + 68         R15
+;                                       + 72         task        (32-bit address of 'task')
+;                                       + 76         PSW
+;                                                                         HIGH MEMORY
+;*********************************************************************************************************
+
+    .SECTION    P, CODE
+    .GLB        _OSCtxSwISR
+
+_OSCtxSwISR:
+    SETPSW  I                          ; Re-enable higher priority interrupts.
+
+                                       ; Transfer Interrupt Stack Contents to the current user stack
+    PUSH.L  R15                        ; Save R15 to interrupt stack as we'll use for temporary register.
+    MVFC    USP, R15                   ; Read the user stack pointer
+    SUB     #12, R15                   ; Create space on user stack
+    MVTC    R15, USP                   ; Update USP
+
+                                       ; SAVE CONTEXT OF TASK BEING SWITCHED OUT
+                                       ; Copy the data across from interrupt stack
+    MOV.L   8[R0], 8[R15]              ; PSW
+    MOV.L   4[R0], 4[R15]              ; PC
+    MOV.L   0[R0], 0[R15]              ; R15
+    ADD     #12, R0                    ; correct ISP for data we are done with using (RTE will be from USP)
+    SETPSW  U                          ; Switch to user stack for pushing rest of registers
+    PUSHM   R1-R14                     ; Save remaining registers
+.if __RX600
+    PUSHC   FPSW                       ; Save FPSW (NOT for RX100 and RX200)
+.endif
+    MVFACHI R1                         ; Save special registers
+    MVFACMI R2
+    PUSHM   R1-R2
+
+                                       ; Context is saved, registers can be used, handle OS requirements
+    BSR.A   _OS_KA_IPL_BoundaryGet     ; Set IPL to Kernel Awareness boundary
+    MVFC    PSW,  R2
+    AND     #-0F000001H, R2
+    SHLL    #24,  R1
+    OR      R1,   R2
+    MVTC    R2,   PSW
+
+    MOV.L   #_OSTCBCur, R5             ; Save current task's SP into its TCB
+    MOV.L   [R5], R2
+    MOV.L   SP, [R2]
+
+    MOV.L   #_OSTaskSwHook, R5         ; Execute task switch hook
+    JSR     R5
+
+    MOV.L   #_OSPrioCur, R3            ; OSPrioCur = OSPrioHighRdy
+    MOV.L   #_OSPrioHighRdy, R2
+    MOV.B   [R2], [R3]
+
+    MOV.L   #_OSTCBCur, R3             ; OSTCBCur = OSTCBHighRdy
+    MOV.L   #_OSTCBHighRdy, R2
+    MOV.L   [R2], [R3]
+    MOV.L   [R3], R2
+    MOV.L   [R2], SP                   ; SP = OSTCBCur->StkPtr
+
+    MVTIPL  #1                         ; Restore IPL to level 1
+
+                                       ; RESTORE CONTEXT OF NEW TASK
+    POPM    R1-R2                      ; Load ACC registers from stack
+    SHLL    #16, R2                    ; Correct for reading mid/writing low
+    MVTACHI R1                         ; Restore special registers
+    MVTACLO R2
+.if __RX600
+    POPC    FPSW                       ; Restore FPSW (NOT for RX100 and RX200)
+.endif
+    POPM    R1-R15
+    RTE
+
+    .END

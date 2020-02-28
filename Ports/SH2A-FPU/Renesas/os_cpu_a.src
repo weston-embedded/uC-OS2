@@ -1,0 +1,314 @@
+;********************************************************************************************************
+;                                              uC/OS-II
+;                                        The Real-Time Kernel
+;
+;                    Copyright 1992-2020 Silicon Laboratories Inc. www.silabs.com
+;
+;                                 SPDX-License-Identifier: APACHE-2.0
+;
+;               This software is subject to an open source license and is distributed by
+;                Silicon Laboratories Inc. pursuant to the terms of the Apache License,
+;                    Version 2.0 available at www.apache.org/licenses/LICENSE-2.0.
+;
+;********************************************************************************************************
+
+;********************************************************************************************************
+;
+;                                    Renesas SH-2A-FPU Specific code
+;                           Renesas SH SERIES C/C++ Compiler (V.9.00.03.006)
+;
+; Filename : os_cpu_a.src
+; Version  : V2.93.00
+;********************************************************************************************************
+
+
+        .EXPORT _OSStartHighRdy
+        .EXPORT _OSCtxSw
+        .EXPORT _OSIntCtxSw
+        .EXPORT _OSTickISR
+        .IMPORT _OSTaskSwHook
+        .IMPORT _OSTCBHighRdy
+        .IMPORT _OSRunning
+        .IMPORT _OSTCBCur
+        .IMPORT _OSPrioCur
+        .IMPORT _OSPrioHighRdy
+        .IMPORT _OSIntEnter
+        .IMPORT _OSTimeTick
+        .IMPORT _OSIntExit
+        .IMPORT _OSIntNesting
+        .IMPORT _TickClr                    ; implement your own function to clear
+                                            ; the OS tick source
+
+
+        .SECTION    P,CODE,ALIGN=4
+
+_OSStartHighRdy:
+        mov.l   #_OSTaskSwHook, r1          ; address of OSTaskSwHook function in R1
+        jsr     @r1                         ; call OSTaskSwHook()
+        nop
+
+        mov.l   #_OSTCBHighRdy, r1          ; address of OSTCBHighRdy in R1
+        mov.l   @r1, r2                     ; r2 is now the address of the ready task
+        mov.l   @r2, r15                    ; stack pointer = OSTCBHighRdy->OstcBStkptr
+
+        mov.l   #_OSRunning, r1             ; address of OSRunning in R1
+        mov     #1, r2                      ; OSRunning = TRUE (1)
+        mov.b   r2, @r1
+
+; restore all processor registers from new task's stack
+
+        fmov.s  @r15+, fr0
+        fmov.s  @r15+, fr1
+        fmov.s  @r15+, fr2
+        fmov.s  @r15+, fr3
+        fmov.s  @r15+, fr4
+        fmov.s  @r15+, fr5
+        fmov.s  @r15+, fr6
+        fmov.s  @r15+, fr7
+        fmov.s  @r15+, fr8
+        fmov.s  @r15+, fr9
+        fmov.s  @r15+, fr10
+        fmov.s  @r15+, fr11
+        fmov.s  @r15+, fr12
+        fmov.s  @r15+, fr13
+        fmov.s  @r15+, fr14
+        fmov.s  @r15+, fr15
+        lds.l   @r15+, fpscr
+        lds.l   @r15+, fpul
+        movml.l @r15+, r15                  ; restores R0, R1 ... R14, PR
+        ldc.l   @r15+, gbr
+        lds.l   @r15+, mach
+        lds.l   @r15+, macl
+
+        rte                                 ; return from interrupt
+        nop
+
+
+_OSCtxSw:
+        mov.l    r0, @-r15                  ; disable interrupts
+        stc      sr, r0
+        or      #240,r0
+        ldc      r0, sr
+        mov.l   @r15+, r0
+
+                                           ; save processor registers on the stack
+
+        sts.l   macl, @-r15
+        sts.l   mach, @-r15
+        stc.l   gbr, @-r15
+        movml.l r15, @-r15                  ; push registers PR, R14, R13 ... R0
+        sts.l   fpul, @-r15
+        sts.l   fpscr, @-r15
+        fmov.s  fr15 ,@-r15
+        fmov.s  fr14 ,@-r15
+        fmov.s  fr13 ,@-r15
+        fmov.s  fr12 ,@-r15
+        fmov.s  fr11 ,@-r15
+        fmov.s  fr10 ,@-r15
+        fmov.s  fr9 ,@-r15
+        fmov.s  fr8 ,@-r15
+        fmov.s  fr7 ,@-r15
+        fmov.s  fr6 ,@-r15
+        fmov.s  fr5 ,@-r15
+        fmov.s  fr4 ,@-r15
+        fmov.s  fr3 ,@-r15
+        fmov.s  fr2 ,@-r15
+        fmov.s  fr1 ,@-r15
+        fmov.s  fr0 ,@-r15
+
+; save current task's stack pointer into current task's OS_TCB
+
+        mov.l   #_OSTCBCur, r0              ; get address of OSTCBCur
+        mov.l   @r0, r3                     ; R3 contains address of current TCB
+        mov.l   r15, @r3                    ; put stack pointer into it
+
+        mov.l   #_OSTaskSwHook, r2
+        jsr     @r2                         ; call OSTaskSWHook
+        nop
+
+        mov.l   #_OSTCBCur, r0              ; get address of OSTCBCur
+        mov.l   #_OSTCBHighRdy, r1          ; get address of OSTCBHighRdy
+        mov.l   @r1, r3
+        mov.l   r3, @r0                     ; OSTCBCur = OSTCBHighRdy
+
+        mov.l   #_OSPrioCur, r0             ; get address of OSPrioCur
+        mov.l   #_OSPrioHighRdy, r2         ; get address of OSPrioHighRdy
+        mov.b   @r2, r3
+        mov.b   r3, @r0
+
+        mov.l   @r1, r2                     ; r2 contains address of current TCB
+        mov.l   @r2, r15                    ; stack pointer = OSTCBHighRdy->OstcBStkPtr
+
+; restore all processor registers from new task's stack
+
+        fmov.s  @r15+, fr0
+        fmov.s  @r15+, fr1
+        fmov.s  @r15+, fr2
+        fmov.s  @r15+, fr3
+        fmov.s  @r15+, fr4
+        fmov.s  @r15+, fr5
+        fmov.s  @r15+, fr6
+        fmov.s  @r15+, fr7
+        fmov.s  @r15+, fr8
+        fmov.s  @r15+, fr9
+        fmov.s  @r15+, fr10
+        fmov.s  @r15+, fr11
+        fmov.s  @r15+, fr12
+        fmov.s  @r15+, fr13
+        fmov.s  @r15+, fr14
+        fmov.s  @r15+, fr15
+        lds.l   @r15+, fpscr
+        lds.l   @r15+, fpul
+        movml.l @r15+, r15                  ; restores R0, R1 ... R14, PR
+        ldc.l   @r15+, gbr
+        lds.l   @r15+, mach
+        lds.l   @r15+, macl
+
+        rte
+        nop
+
+
+_OSIntCtxSw:
+
+        mov.l    r0, @-r15                  ; disable interrupts
+        stc      sr, r0
+        or      #240,r0
+        ldc      r0, sr
+        mov.l   @r15+, r0
+
+
+        mov.l   #_OSTaskSwHook, r2
+        jsr     @r2                         ; call OSTaskSWHook
+        nop
+
+        mov.l   #_OSPrioHighRdy, r2         ; get address of OSPrioHighRdy
+        mov.l   #_OSPrioCur, r0             ; get address of OSPrioCur
+        mov.b   @r2, r3
+        mov.b   r3, @r0                     ; OSPrioCur = OSPrioHighRdy
+
+        mov.l   #_OSTCBHighRdy, r1          ; get address of OSTCBHighRdy
+        mov.l   #_OSTCBCur, r0              ; get address of OSTCBCur
+        mov.l   @r1, r3
+        mov.l   r3, @r0                     ; OSTCBCur = OSTCBHighRdy
+
+        mov.l   @r3, r15                    ; CPU stack pointer = OSTCBHighRdy->OstcBStkPtr
+
+; restore all processor registers from new task's stack
+
+        fmov.s  @r15+, fr0
+        fmov.s  @r15+, fr1
+        fmov.s  @r15+, fr2
+        fmov.s  @r15+, fr3
+        fmov.s  @r15+, fr4
+        fmov.s  @r15+, fr5
+        fmov.s  @r15+, fr6
+        fmov.s  @r15+, fr7
+        fmov.s  @r15+, fr8
+        fmov.s  @r15+, fr9
+        fmov.s  @r15+, fr10
+        fmov.s  @r15+, fr11
+        fmov.s  @r15+, fr12
+        fmov.s  @r15+, fr13
+        fmov.s  @r15+, fr14
+        fmov.s  @r15+, fr15
+        lds.l   @r15+, fpscr
+        lds.l   @r15+, fpul
+        movml.l @r15+, r15                  ; restores R0, R1 ... R14, PR
+        ldc.l   @r15+, gbr
+        lds.l   @r15+, mach
+        lds.l   @r15+, macl
+
+        rte
+        nop
+
+
+_OSTickISR:
+        mov.l    r0, @-r15                  ; disable interrupts
+        stc      sr, r0
+        or      #240,r0
+        ldc      r0, sr
+        mov.l   @r15+, r0
+
+
+; Save processor registers on the stack
+
+        sts.l   macl, @-r15
+        sts.l   mach, @-r15
+        stc.l   gbr, @-r15
+        movml.l r15, @-r15                  ; push registers PR, R14, R13 ... R0
+        sts.l   fpul, @-r15
+        sts.l   fpscr, @-r15
+        fmov.s  fr15 ,@-r15
+        fmov.s  fr14 ,@-r15
+        fmov.s  fr13 ,@-r15
+        fmov.s  fr12 ,@-r15
+        fmov.s  fr11 ,@-r15
+        fmov.s  fr10 ,@-r15
+        fmov.s  fr9 ,@-r15
+        fmov.s  fr8 ,@-r15
+        fmov.s  fr7 ,@-r15
+        fmov.s  fr6 ,@-r15
+        fmov.s  fr5 ,@-r15
+        fmov.s  fr4 ,@-r15
+        fmov.s  fr3 ,@-r15
+        fmov.s  fr2 ,@-r15
+        fmov.s  fr1 ,@-r15
+        fmov.s  fr0 ,@-r15
+
+; clear compare match interupt
+
+        mov.l   #_OSIntNesting, r1      ; Increment OSIntNesting
+        mov.b   @r1, r0
+        extu.b  r0, r0
+        add     #1, r0
+        mov.b   r0, @r1                 ; If OSIntNesting == 1 save the current stack pointer
+        tst     #1, r0                  ; onto the current task's stack
+        bt      _OSTickISR1
+
+        mov.l   #_OSTCBCur, r1          ; Save current task's SP into its TCB
+        mov.l   @r1, r0
+        mov     r15, @r0
+
+_OSTickISR1:
+
+        mov.l   #_TickClr, r3           ; clear timer interrupt source
+        jsr     @r3
+        nop
+
+        mov.l   #_OSTimeTick, r0
+        jsr     @r0                     ; call OSTimeTick()
+        nop
+
+        mov.l   #_OSIntExit, r0
+        jsr     @r0                     ; call OSIntExit()
+        nop
+
+; restore all processor registers from stack
+
+        fmov.s  @r15+, fr0
+        fmov.s  @r15+, fr1
+        fmov.s  @r15+, fr2
+        fmov.s  @r15+, fr3
+        fmov.s  @r15+, fr4
+        fmov.s  @r15+, fr5
+        fmov.s  @r15+, fr6
+        fmov.s  @r15+, fr7
+        fmov.s  @r15+, fr8
+        fmov.s  @r15+, fr9
+        fmov.s  @r15+, fr10
+        fmov.s  @r15+, fr11
+        fmov.s  @r15+, fr12
+        fmov.s  @r15+, fr13
+        fmov.s  @r15+, fr14
+        fmov.s  @r15+, fr15
+        lds.l   @r15+, fpscr
+        lds.l   @r15+, fpul
+        movml.l @r15+, r15                  ; restores PR, R0, R1 ... R14
+        ldc.l   @r15+, gbr
+        lds.l   @r15+, mach
+        lds.l   @r15+, macl
+
+        rte
+        nop
+
+        .END
