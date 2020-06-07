@@ -12,6 +12,13 @@
 *                    Version 2.0 available at www.apache.org/licenses/LICENSE-2.0.
 *
 *********************************************************************************************************
+*
+* Modified from the original to interoperate with CMIS as follows:
+* - renamed OS_CPU_PendSVHandler to CMSIS-compatible name PendSV_Handler
+* - renamed OS_CPU_SysTickHandler to CMSIS-compatible name SysTick_Handler
+*
+* Quantum Leaps, LLC. www.state-machine.com
+* 2020-06-01
 */
 
 /*
@@ -183,8 +190,8 @@ void       OSStartHighRdy         (void);
 void       OS_CPU_SysTickInit     (INT32U  cnts);
 void       OS_CPU_SysTickInitFreq (INT32U  cpu_freq);
 
-void       OS_CPU_SysTickHandler  (void);
-void       OS_CPU_PendSVHandler   (void);
+void       SysTick_Handler        (void);  /* QL was: OS_CPU_SysTickHandler  (void); */
+void       PendSV_Handler         (void);  /* QL was: OS_CPU_PendSVHandler   (void); */
 
 
 /*

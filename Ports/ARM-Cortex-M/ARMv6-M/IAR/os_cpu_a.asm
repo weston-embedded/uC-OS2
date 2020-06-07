@@ -11,6 +11,12 @@
 ;                    Version 2.0 available at www.apache.org/licenses/LICENSE-2.0.
 ;
 ;********************************************************************************************************
+; Modified from the original to interoperate with CMIS as follows:
+; - renamed OS_CPU_PendSVHandler to CMSIS-compatible name PendSV_Handler
+;
+; Quantum Leaps, LLC. www.state-machine.com
+; 2020-06-01
+;********************************************************************************************************
 
 ;********************************************************************************************************
 ;
@@ -219,7 +225,7 @@ OSIntCtxSw
 ;              therefore safe to assume that context being switched out was using the process stack (PSP).
 ;********************************************************************************************************
 
-OS_CPU_PendSVHandler
+PendSV_Handler  ; QL was: OS_CPU_PendSVHandler
     CPSID   I                                                   ; Prevent interruption during context switch
     MRS     R0, PSP                                             ; PSP is process stack pointer
 

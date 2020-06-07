@@ -11,6 +11,12 @@
 ;                    Version 2.0 available at www.apache.org/licenses/LICENSE-2.0.
 ;
 ;********************************************************************************************************
+; Modified from the original to interoperate with CMIS as follows:
+; - renamed OS_CPU_PendSVHandler to CMSIS-compatible name PendSV_Handler
+;
+; Quantum Leaps, LLC. www.state-machine.com
+; 2020-06-01
+;********************************************************************************************************
 
 ;********************************************************************************************************
 ;
@@ -49,7 +55,7 @@
     PUBLIC  OS_CPU_SR_Restore
     PUBLIC  OSCtxSw
     PUBLIC  OSIntCtxSw
-    PUBLIC  OS_CPU_PendSVHandler
+    PUBLIC  PendSV_Handler  ; QL was: OS_CPU_PendSVHandler
 
 #ifdef __ARMVFP__
     PUBLIC  OS_CPU_FP_Reg_Push
@@ -320,7 +326,7 @@ OSIntCtxSw
 ;                  CPSIE i
 ;********************************************************************************************************
 
-OS_CPU_PendSVHandler
+PendSV_Handler  ; QL was: OS_CPU_PendSVHandler
     CPSID   I                                                   ; Cortex-M7 errata notice. See Note #5
     MOV32   R2, OS_KA_BASEPRI_Boundary                          ; Set BASEPRI priority level required for exception preemption
     LDR     R1, [R2]

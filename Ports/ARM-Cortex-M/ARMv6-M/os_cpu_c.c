@@ -12,6 +12,12 @@
 *                    Version 2.0 available at www.apache.org/licenses/LICENSE-2.0.
 *
 *********************************************************************************************************
+*
+* Modified from the original to interoperate with CMIS as follows:
+* - renamed OS_CPU_SysTickHandler to CMSIS-compatible name SysTick_Handler
+*
+* Quantum Leaps, LLC. www.state-machine.com
+* 2020-06-01
 */
 
 /*
@@ -465,7 +471,7 @@ void  OSTimeTickHook (void)
 *********************************************************************************************************
 */
 
-void  OS_CPU_SysTickHandler (void)
+void SysTick_Handler (void) /* QL was: void  OS_CPU_SysTickHandler (void) */
 {
 #if OS_CRITICAL_METHOD == 3u                                    /* Allocate storage for CPU status register             */
     OS_CPU_SR  cpu_sr;
