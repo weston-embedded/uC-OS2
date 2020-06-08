@@ -51,7 +51,7 @@
     PUBLIC  OS_CPU_SR_Restore
     PUBLIC  OSCtxSw
     PUBLIC  OSIntCtxSw
-    PUBLIC  OS_CPU_PendSVHandler
+    PUBLIC  PendSV_Handler ; QL was: OS_CPU_PendSVHandler
 
 
 ;********************************************************************************************************

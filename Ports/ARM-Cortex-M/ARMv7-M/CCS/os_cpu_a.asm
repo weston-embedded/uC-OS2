@@ -65,7 +65,7 @@ OS_KA_BASEPRI_BoundaryAddr:  .word  OS_KA_BASEPRI_Boundary
     .global  OS_CPU_SR_Restore
     .global  OSCtxSw
     .global  OSIntCtxSw
-    .global  OS_CPU_PendSVHandler
+    .global  PendSV_Handler ; QL was: OS_CPU_PendSVHandler
 
     .if __TI_VFP_SUPPORT__
     .global  OS_CPU_FP_Reg_Push

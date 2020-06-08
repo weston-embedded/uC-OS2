@@ -51,7 +51,7 @@
     EXPORT  OS_CPU_SR_Restore
     EXPORT  OSCtxSw
     EXPORT  OSIntCtxSw
-    EXPORT  OS_CPU_PendSVHandler
+    EXPORT  PendSV_Handler  ; QL was: OS_CPU_PendSVHandler
 
 
 ;********************************************************************************************************

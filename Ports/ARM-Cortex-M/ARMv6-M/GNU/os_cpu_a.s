@@ -51,7 +51,7 @@
     .global  OS_CPU_SR_Restore
     .global  OSCtxSw
     .global  OSIntCtxSw
-    .global  OS_CPU_PendSVHandler
+    .global  PendSV_Handler  @ QL was: OS_CPU_PendSVHandler
 
 
 @********************************************************************************************************
@@ -238,7 +238,7 @@ PendSV_Handler:  @ QL was: OS_CPU_PendSVHandler
 
     CMP     R0, #0
     BEQ     OS_CPU_PendSVHandler_nosave                         @ equivalent code to CBZ from M3 arch to M0 arch
-																@ Except that it does not change the condition code flags
+                                                                @ Except that it does not change the condition code flags
 
     SUBS    R0, R0, #0x24                                       @ Adjust SP to make space for Low, High & LR registers
     LDR     R1, =OSTCBCur                                       @ OSTCBCur->OSTCBStkPtr = SP;
