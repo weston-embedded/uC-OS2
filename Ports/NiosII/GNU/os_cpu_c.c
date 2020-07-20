@@ -73,7 +73,10 @@ static  INT16U  OSTmrCtr;
 *********************************************************************************************************
 */
 
-OS_STK *OSTaskStkInit(void (*task)(void *pd), void *pdata, OS_STK *pstk, INT16U opt)
+OS_STK  *OSTaskStkInit (void    (*task)(void *p_arg),
+                        void     *pdata,
+                        OS_STK   *ptos,
+                        INT16U    opt)
 {
    INT32U   *frame_pointer;
    INT32U   *stk;
@@ -87,7 +90,7 @@ OS_STK *OSTaskStkInit(void (*task)(void *pd), void *pdata, OS_STK *pstk, INT16U 
     * a single reent structure is used for all threads, which saves memory.
     */
 
-   local_impure_ptr = (struct _reent*)((((INT32U)(pstk)) & ~0x3) - sizeof(struct _reent));
+   local_impure_ptr = (struct _reent*)((((INT32U)(ptos)) & ~0x3) - sizeof(struct _reent));
 
    _REENT_INIT_PTR (local_impure_ptr);
 
@@ -98,14 +101,14 @@ OS_STK *OSTaskStkInit(void (*task)(void *pd), void *pdata, OS_STK *pstk, INT16U 
 
    frame_pointer = (INT32U*) local_impure_ptr;
 #else
-   frame_pointer =   (INT32U*) (((INT32U)(pstk)) & ~0x3);
+   frame_pointer = (INT32U*) (((INT32U)(ptos)) & ~0x3);
 #endif /* OS_THREAD_SAFE_NEWLIB */
    stk = frame_pointer - 13;
 
    /* Now fill the stack frame. */
 
    stk[12] = (INT32U)task;            /* task address (ra) */
-   stk[11] = (INT32U) pdata;          /* first register argument (r4) */
+   stk[11] = (INT32U)pdata;           /* first register argument (r4) */
 
 #if OS_THREAD_SAFE_NEWLIB
    stk[10] = (INT32U) local_impure_ptr; /* value of _impure_ptr for this thread */
@@ -136,7 +139,7 @@ OS_STK *OSTaskStkInit(void (*task)(void *pd), void *pdata, OS_STK *pstk, INT16U 
 *********************************************************************************************************
 */
 
-void OSTaskCreateHook (OS_TCB *ptcb)
+void  OSTaskCreateHook (OS_TCB  *ptcb)
 {
     ptcb = ptcb;                                                /* Prevent compiler warning                             */
 }
@@ -154,7 +157,7 @@ void OSTaskCreateHook (OS_TCB *ptcb)
 *********************************************************************************************************
 */
 
-void OSTaskDelHook (OS_TCB *ptcb)
+void  OSTaskDelHook (OS_TCB  *ptcb)
 {
     ptcb = ptcb;                                                /* Prevent compiler warning                             */
 }
@@ -176,7 +179,7 @@ void OSTaskDelHook (OS_TCB *ptcb)
 *********************************************************************************************************
 */
 
-void OSTaskSwHook (void)
+void  OSTaskSwHook (void)
 {
 }
 
@@ -192,7 +195,7 @@ void OSTaskSwHook (void)
 *********************************************************************************************************
 */
 
-void OSTaskStatHook (void)
+void  OSTaskStatHook (void)
 {
 }
 
@@ -214,10 +217,10 @@ void OSTaskStatHook (void)
  * Do that here to avoid build warnings.
  */
 #ifdef ALT_INICHE
-void cticks_hook(void);
+void  cticks_hook (void);
 #endif
 
-void OSTimeTickHook (void)
+void  OSTimeTickHook (void)
 {
 #if OS_TMR_EN > 0
     OSTmrCtr++;
@@ -233,26 +236,26 @@ void OSTimeTickHook (void)
 #endif
 }
 
-void OSInitHookBegin(void)
+void  OSInitHookBegin (void)
 {
 #if OS_TMR_EN > 0
     OSTmrCtr = 0;
 #endif
 }
 
-void OSInitHookEnd(void)
+void  OSInitHookEnd (void)
 {
 }
 
-void OSTaskIdleHook(void)
+void  OSTaskIdleHook (void)
 {
 }
 
-void  OSTaskReturnHook(OS_TCB  *ptcb)
+void  OSTaskReturnHook (OS_TCB  *ptcb)
 {
 }
 
-void OSTCBInitHook(OS_TCB *ptcb)
+void  OSTCBInitHook (OS_TCB  *ptcb)
 {
 }
 
