@@ -361,7 +361,11 @@ OS_CPU_PendSVHandler
     MSR     PSP, R0                                             ; Load PSP with new process SP
 
     MOV32   R2, #0                                              ; Restore BASEPRI priority level to 0
+    CPSID   I
     MSR     BASEPRI, R2
+    DSB
+    ISB
+    CPSIE   I
     BX      LR                                                  ; Exception return will restore remaining context
 
     ALIGN                                                       ; Removes warning[A1581W]: added <no_padbytes> of padding at <address>
