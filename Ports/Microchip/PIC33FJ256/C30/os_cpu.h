@@ -3,7 +3,7 @@
 *                                              uC/OS-II
 *                                        The Real-Time Kernel
 *
-*                    Copyright 1992-2020 Silicon Laboratories Inc. www.silabs.com
+*                    Copyright 1992-2021 Silicon Laboratories Inc. www.silabs.com
 *
 *                                 SPDX-License-Identifier: APACHE-2.0
 *
@@ -21,7 +21,7 @@
 *                                          dsPIC33 MPLab Port
 *
 * Filename : os_cpu.h
-* Version  : V2.93.00
+* Version  : V2.93.01
 *********************************************************************************************************
 */
 
@@ -91,5 +91,3 @@ typedef INT16U            OS_CPU_SR;                             /* Define the s
 #define OS_ENTER_CRITICAL() {cpu_sr = SR; SRbits.IPL = 7;}       /* Disable all interrupts                         */
 #define OS_EXIT_CRITICAL()  {SR = cpu_sr;}                       /* Enable  interrupts                             */
 #endif
-
-

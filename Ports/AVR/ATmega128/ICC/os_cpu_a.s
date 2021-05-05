@@ -2,7 +2,7 @@
 ;                                              uC/OS-II
 ;                                        The Real-Time Kernel
 ;
-;                    Copyright 1992-2020 Silicon Laboratories Inc. www.silabs.com
+;                    Copyright 1992-2021 Silicon Laboratories Inc. www.silabs.com
 ;
 ;                                 SPDX-License-Identifier: APACHE-2.0
 ;
@@ -18,7 +18,7 @@
 ;                                           ICC AVR Compiler
 ;
 ; Filename : os_cpu_a.s
-; Version  : V2.93.00
+; Version  : V2.93.01
 ;********************************************************************************************************
 
                 .include  "os_cpu_i.h"

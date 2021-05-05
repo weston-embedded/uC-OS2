@@ -2,7 +2,7 @@
 ;                                              uC/OS-II
 ;                                        The Real-Time Kernel
 ;
-;                    Copyright 1992-2020 Silicon Laboratories Inc. www.silabs.com
+;                    Copyright 1992-2021 Silicon Laboratories Inc. www.silabs.com
 ;
 ;                                 SPDX-License-Identifier: APACHE-2.0
 ;
@@ -17,7 +17,7 @@
 ;                                             ARMv7-M Port
 ;
 ; Filename  : os_cpu_a.asm
-; Version   : V2.93.00
+; Version   : V2.93.01
 ;********************************************************************************************************
 ; For       : ARMv7-M Cortex-M
 ; Mode      : Thumb-2 ISA
@@ -361,7 +361,11 @@ OS_CPU_PendSVHandler
     MSR     PSP, R0                                             ; Load PSP with new process SP
 
     MOV32   R2, #0                                              ; Restore BASEPRI priority level to 0
+    CPSID   I
     MSR     BASEPRI, R2
+    DSB
+    ISB
+    CPSIE   I
     BX      LR                                                  ; Exception return will restore remaining context
 
     ALIGN                                                       ; Removes warning[A1581W]: added <no_padbytes> of padding at <address>

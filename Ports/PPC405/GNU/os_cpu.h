@@ -3,7 +3,7 @@
 *                                              uC/OS-II
 *                                        The Real-Time Kernel
 *
-*                    Copyright 1992-2020 Silicon Laboratories Inc. www.silabs.com
+*                    Copyright 1992-2021 Silicon Laboratories Inc. www.silabs.com
 *
 *                                 SPDX-License-Identifier: APACHE-2.0
 *
@@ -22,7 +22,7 @@
 *                                          GNU  C/C++ Compiler
 *
 * Filename : os_cpu.h
-* Version  : V2.93.00
+* Version  : V2.93.01
 *********************************************************************************************************
 */
 
@@ -101,4 +101,3 @@ typedef unsigned  int  volatile  OS_CPU_SR;    /* The CPU Status Word is 32-bits
 
 OS_CPU_SR	OS_CPU_SR_Save(void);          /* See OS_CPU_A.S                                           */
 void		OS_CPU_SR_Restore(OS_CPU_SR);  /* See OS_CPU_A.S                                           */
-

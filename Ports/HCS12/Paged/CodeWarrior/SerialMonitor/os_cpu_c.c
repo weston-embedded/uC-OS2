@@ -3,7 +3,7 @@
 *                                              uC/OS-II
 *                                        The Real-Time Kernel
 *
-*                    Copyright 1992-2020 Silicon Laboratories Inc. www.silabs.com
+*                    Copyright 1992-2021 Silicon Laboratories Inc. www.silabs.com
 *
 *                                 SPDX-License-Identifier: APACHE-2.0
 *
@@ -24,7 +24,7 @@
 *                                            Codewarrior 4.x
 *
 * Filename : os_cpu_c.c
-* Version  : V2.93.00
+* Version  : V2.93.01
 *********************************************************************************************************
 * Note(s)  : (1) This port will not function in expanded mode. This is due to the fact that the
 *                OS_TASK_SW() macro utilizes JSR instead of CALL.  The CALL instruction may not
@@ -362,4 +362,3 @@ void  OSTimeTickHook (void)
 #endif
 }
 #endif
-
