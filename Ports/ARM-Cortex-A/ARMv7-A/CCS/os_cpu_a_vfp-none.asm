@@ -2,7 +2,7 @@
 ;                                              uC/OS-II
 ;                                        The Real-Time Kernel
 ;
-;                    Copyright 1992-2020 Silicon Laboratories Inc. www.silabs.com
+;                    Copyright 1992-2021 Silicon Laboratories Inc. www.silabs.com
 ;
 ;                                 SPDX-License-Identifier: APACHE-2.0
 ;
@@ -17,7 +17,7 @@
 ;                                             ARMv7-A Port
 ;
 ; Filename  : os_cpu_a_vfp-none.asm
-; Version   : V2.93.00
+; Version   : V2.93.01
 ;********************************************************************************************************
 ; For       : ARMv7-A Cortex-A
 ; Mode      : ARM or Thumb
@@ -691,4 +691,3 @@ OS_CPU_ARM_DRegCntGet
 
     MOV     R0, #0
     BX      LR
-

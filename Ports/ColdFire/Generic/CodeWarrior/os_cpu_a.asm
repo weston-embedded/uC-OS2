@@ -3,7 +3,7 @@
 ;                                              uC/OS-II
 ;                                        The Real-Time Kernel
 ;
-;                    Copyright 1992-2020 Silicon Laboratories Inc. www.silabs.com
+;                    Copyright 1992-2021 Silicon Laboratories Inc. www.silabs.com
 ;
 ;                                 SPDX-License-Identifier: APACHE-2.0
 ;
@@ -17,7 +17,7 @@
 /*
 ;********************************************************************************************************
 ; Filename : os_cpu_a.asm
-; Version  : V2.93.00
+; Version  : V2.93.01
 ;********************************************************************************************************
 ; Note(s)  : 1) This port uses the MOVEM.L (A7),D0-D7/A0-A6, LEA 60(A7)A7 construct instead of
 ;               the traditional 68xxx MOVEM.L (A7)+,D0-D7/A0-A6.  It is perfectly in order to
@@ -261,4 +261,3 @@ _OS_My_ISR_Handler:
       RTS
 
       .end
-
