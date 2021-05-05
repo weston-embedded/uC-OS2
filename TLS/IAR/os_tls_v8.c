@@ -3,7 +3,7 @@
 *                                              uC/OS-II
 *                                        The Real-Time Kernel
 *
-*                    Copyright 1992-2020 Silicon Laboratories Inc. www.silabs.com
+*                    Copyright 1992-2021 Silicon Laboratories Inc. www.silabs.com
 *
 *                                 SPDX-License-Identifier: APACHE-2.0
 *
@@ -21,7 +21,7 @@
 *                                       EWARM V8 IMPLEMENTATION
 *
 * Filename : os_tls.c
-* Version  : V2.93.00
+* Version  : V2.93.01
 *********************************************************************************************************
 */
 
@@ -844,4 +844,3 @@ void  __iar_file_Mtxunlock (__iar_Rmtx  *p_lock)
 
 #endif                                                          /* #if (OS_TASK_CREATE_EXT_EN > 0u)                         */
 #endif                                                          /* #if (defined(OS_TLS_TBL_SIZE) && (OS_TLS_TBL_SIZE > 0u)) */
-
