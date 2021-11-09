@@ -913,7 +913,7 @@ OS_FLAGS  OSFlagPost (OS_FLAG_GRP  *pgrp,
     pnode = (OS_FLAG_NODE *)pgrp->OSFlagWaitList;
     while (pnode != (OS_FLAG_NODE *)0) {             /* Go through all tasks waiting on event flag(s)  */
         wait_type = pnode->OSFlagNodeWaitType;
-        if ((wait_type & OS_FLAG_CONSUME) != 0x00u) {
+        if ((wait_type & OS_FLAG_CONSUME) != (INT8U)0) {
             consume = OS_TRUE;
             wait_type &= (INT8U)~(INT8U)OS_FLAG_CONSUME;
         } else {
