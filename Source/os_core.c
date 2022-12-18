@@ -114,9 +114,9 @@ static  void  OS_SchedNew(void);
 */
 
 #if (OS_EVENT_EN) && (OS_EVENT_NAME_EN > 0u)
-INT8U  OSEventNameGet (OS_EVENT   *pevent,
-                       INT8U     **pname,
-                       INT8U      *perr)
+INT8U  OSEventNameGet (OS_EVENT      *pevent,
+                       const INT8U  **pname,
+                       INT8U         *perr)
 {
     INT8U      len;
 #if OS_CRITICAL_METHOD == 3u                     /* Allocate storage for CPU status register           */
@@ -137,7 +137,7 @@ INT8U  OSEventNameGet (OS_EVENT   *pevent,
         *perr = OS_ERR_PEVENT_NULL;
         return (0u);
     }
-    if (pname == (INT8U **)0) {                   /* Is 'pname' a NULL pointer?                         */
+    if (pname == (const INT8U **)0) {                   /* Is 'pname' a NULL pointer?                         */
         *perr = OS_ERR_PNAME_NULL;
         return (0u);
     }
@@ -194,9 +194,9 @@ INT8U  OSEventNameGet (OS_EVENT   *pevent,
 */
 
 #if (OS_EVENT_EN) && (OS_EVENT_NAME_EN > 0u)
-void  OSEventNameSet (OS_EVENT  *pevent,
-                      INT8U     *pname,
-                      INT8U     *perr)
+void  OSEventNameSet (OS_EVENT       *pevent,
+                      const INT8U    *pname,
+                      INT8U          *perr)
 {
 #if OS_CRITICAL_METHOD == 3u                     /* Allocate storage for CPU status register           */
     OS_CPU_SR  cpu_sr = 0u;
@@ -1793,13 +1793,13 @@ static  void  OS_SchedNew (void)
 */
 
 #if (OS_EVENT_NAME_EN > 0u) || (OS_FLAG_NAME_EN > 0u) || (OS_MEM_NAME_EN > 0u) || (OS_TASK_NAME_EN > 0u) || (OS_TMR_CFG_NAME_EN > 0u)
-INT8U  OS_StrLen (INT8U *psrc)
+INT8U  OS_StrLen (const INT8U *psrc)
 {
     INT8U  len;
 
 
 #if OS_ARG_CHK_EN > 0u
-    if (psrc == (INT8U *)0) {
+    if (psrc == (const INT8U *)0) {
         return (0u);
     }
 #endif

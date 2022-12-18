@@ -383,7 +383,7 @@ typedef struct os_event {
     OS_PRIO  OSEventTbl[OS_EVENT_TBL_SIZE]; /* List of tasks waiting for event to occur                */
 
 #if OS_EVENT_NAME_EN > 0u
-    INT8U   *OSEventName;
+    const INT8U *OSEventName;
 #endif
 } OS_EVENT;
 #endif
@@ -795,11 +795,11 @@ extern  INT8U   const     OSUnMapTbl[256];          /* Priority->Index    lookup
 
 #if (OS_EVENT_NAME_EN > 0u)
 INT8U         OSEventNameGet          (OS_EVENT        *pevent,
-                                       INT8U          **pname,
+                                       const INT8U    **pname,
                                        INT8U           *perr);
 
 void          OSEventNameSet          (OS_EVENT        *pevent,
-                                       INT8U           *pname,
+                                       const INT8U     *pname,
                                        INT8U           *perr);
 #endif
 
@@ -1346,7 +1346,7 @@ void          OS_QInit                (void);
 void          OS_Sched                (void);
 
 #if (OS_EVENT_NAME_EN > 0u) || (OS_FLAG_NAME_EN > 0u) || (OS_MEM_NAME_EN > 0u) || (OS_TASK_NAME_EN > 0u)
-INT8U         OS_StrLen               (INT8U           *psrc);
+INT8U         OS_StrLen               (const INT8U     *psrc);
 #endif
 
 void          OS_TaskIdle             (void            *p_arg);
