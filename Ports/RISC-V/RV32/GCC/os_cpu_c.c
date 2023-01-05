@@ -101,7 +101,7 @@ void  OSInitHookEnd (void)
 *
 * Description: This function is called when a task is created.
 *
-* Arguments  : ptcb   is a pointer to the task control block of the task being created.
+* Arguments  : p_tcb   is a pointer to the task control block of the task being created.
 *
 * Note(s)    : 1) Interrupts are disabled during this call.
 *********************************************************************************************************
@@ -113,7 +113,7 @@ void  OSTaskCreateHook (OS_TCB  *p_tcb)
 #if OS_APP_HOOKS_EN > 0u
     App_TaskCreateHook(p_tcb);
 #else
-    (void)ptcb;                                /* Prevent compiler warning                             */
+    (void)p_tcb;                                /* Prevent compiler warning                            */
 #endif
 }
 #endif
@@ -125,7 +125,7 @@ void  OSTaskCreateHook (OS_TCB  *p_tcb)
 *
 * Description: This function is called when a task is deleted.
 *
-* Arguments  : ptcb   is a pointer to the task control block of the task being deleted.
+* Arguments  : p_tcb   is a pointer to the task control block of the task being deleted.
 *
 * Note(s)    : 1) Interrupts are disabled during this call.
 *********************************************************************************************************
@@ -137,7 +137,7 @@ void  OSTaskDelHook (OS_TCB  *p_tcb)
 #if OS_APP_HOOKS_EN > 0u
     App_TaskDelHook(p_tcb);
 #else
-    (void)ptcb;                                /* Prevent compiler warning                             */
+    (void)p_tcb;                                /* Prevent compiler warning                            */
 #endif
 }
 #endif
@@ -173,7 +173,7 @@ void  OSTaskIdleHook (void)
 * Description: This function is called if a task accidentally returns.  In other words, a task should
 *              either be an infinite loop or delete itself when done.
 *
-* Arguments  : ptcb      is a pointer to the task control block of the task that is returning.
+* Arguments  : p_tcb      is a pointer to the task control block of the task that is returning.
 *
 * Note(s)    : none
 *********************************************************************************************************
@@ -185,7 +185,7 @@ void  OSTaskReturnHook (OS_TCB  *p_tcb)
 #if OS_APP_HOOKS_EN > 0u
     App_TaskReturnHook(p_tcb);
 #else
-    (void)ptcb;
+    (void)p_tcb;                                /* Prevent compiler warning                            */
 #endif
 }
 #endif
@@ -363,7 +363,7 @@ void  OSTaskSwHook (void)
 *
 * Description: This function is called by OS_TCBInit() after setting up most of the TCB.
 *
-* Arguments  : ptcb    is a pointer to the TCB of the task being created.
+* Arguments  : p_tcb    is a pointer to the TCB of the task being created.
 *
 * Note(s)    : 1) Interrupts may or may not be ENABLED during this call.
 *********************************************************************************************************
@@ -375,7 +375,7 @@ void  OSTCBInitHook (OS_TCB  *p_tcb)
 #if OS_APP_HOOKS_EN > 0u
     App_TCBInitHook(p_tcb);
 #else
-    (void)ptcb;                                /* Prevent compiler warning                             */
+    (void)p_tcb;                                /* Prevent compiler warning                            */
 #endif
 }
 #endif
