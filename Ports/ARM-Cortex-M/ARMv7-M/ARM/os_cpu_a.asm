@@ -255,6 +255,11 @@ OSStartHighRdy
     LDMFD    SP!, {R0-R3}                                       ; Restore r0, r3
     LDMFD    SP!, {R12, LR}                                     ; Load R12 and LR
     LDMFD    SP!, {R1, R2}                                      ; Load PC and discard xPSR
+
+    IF {FPU} != "SoftVFP"
+    VLDMIA   SP!, {S0-S15, S16}					; Restore s0-s15 and discard FPSCR
+    ENDIF
+
     CPSIE    I
     BX       R1
 
